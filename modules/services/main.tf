@@ -1,6 +1,3 @@
-# =======================================================
-# ARTIFACT REGISTRY (Pour stocker les images Docker)
-# =======================================================
 resource "google_artifact_registry_repository" "repo" {
   location      = var.region
   repository_id = "swordmanager-repo"
@@ -8,16 +5,13 @@ resource "google_artifact_registry_repository" "repo" {
   format        = "DOCKER"
 }
 
-# =======================================================
-# BACKEND (API Node.js)
-# =======================================================
 resource "google_cloud_run_v2_service" "backend" {
   name     = "swordmanager-backend"
   location = var.region
 
   template {
     containers {
-      image = "us-docker.pkg.dev/cloudrun/container/hello" # Image temporaire pour initialiser Terraform
+      image = "us-docker.pkg.dev/cloudrun/container/hello"
       
       env {
         name  = "DB_HOST"
@@ -48,12 +42,11 @@ resource "google_cloud_run_v2_service" "backend" {
 
   lifecycle {
     ignore_changes = [
-      template[0].containers[0].image # Évite à Terraform d'écraser le code de Dorian
+      template[0].containers[0].image
     ]
   }
 }
 
-# Rendre le Backend accessible sur Internet
 resource "google_cloud_run_service_iam_member" "backend_public" {
   location = google_cloud_run_v2_service.backend.location
   service  = google_cloud_run_v2_service.backend.name
@@ -61,7 +54,6 @@ resource "google_cloud_run_service_iam_member" "backend_public" {
   member   = "allUsers"
 }
 
-# DNS du Backend (api.swordmanager.cloud)
 resource "google_cloud_run_domain_mapping" "backend_dns" {
   location = var.region
   name     = "api.${var.domain_name}"
@@ -74,9 +66,6 @@ resource "google_cloud_run_domain_mapping" "backend_dns" {
   }
 }
 
-# =======================================================
-# FRONTEND (Site Web Statique)
-# =======================================================
 resource "google_cloud_run_v2_service" "frontend" {
   name     = "swordmanager-frontend"
   location = var.region
@@ -94,7 +83,6 @@ resource "google_cloud_run_v2_service" "frontend" {
   }
 }
 
-# Rendre le Frontend accessible sur Internet
 resource "google_cloud_run_service_iam_member" "frontend_public" {
   location = google_cloud_run_v2_service.frontend.location
   service  = google_cloud_run_v2_service.frontend.name
@@ -102,7 +90,6 @@ resource "google_cloud_run_service_iam_member" "frontend_public" {
   member   = "allUsers"
 }
 
-# DNS du Frontend (www.swordmanager.cloud)
 resource "google_cloud_run_domain_mapping" "frontend_dns_www" {
   location = var.region
   name     = "www.${var.domain_name}"
@@ -115,7 +102,6 @@ resource "google_cloud_run_domain_mapping" "frontend_dns_www" {
   }
 }
 
-# DNS du Frontend (swordmanager.cloud - Domaine Racine)
 resource "google_cloud_run_domain_mapping" "frontend_dns_root" {
   location = var.region
   name     = var.domain_name
